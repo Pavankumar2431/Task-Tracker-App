@@ -42,14 +42,14 @@ const TaskTracker = ({onLogout}) => {
   const handleSave = async () => {
     try {
       if (modalData.id) {
-        await axios.patch(`${apiUrl}/${modalData.id}`, modalData);
+        await axios.patch(`${apiUrl}/tasks/${modalData.id}`, modalData);
         setTasks((prevTasks) =>
           prevTasks.map((task) =>
             task._id === modalData.id ? { ...task, ...modalData } : task
           )
         );
       } else {
-        const response = await axios.post(apiUrl, modalData);
+        const response = await axios.post(`${apiUrl}/tasks`, modalData);
         setTasks((prevTasks) => [...prevTasks, response.data]);
       }
       resetModalData();
@@ -62,7 +62,7 @@ const TaskTracker = ({onLogout}) => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
-        await axios.delete(`${apiUrl}/${id}`);
+        await axios.delete(`${apiUrl}/tasks/${id}`);
         setTasks((prevTasks) => prevTasks.filter((task) => task._id !== id));
       } catch (error) {
         console.error('Error deleting task:', error);
