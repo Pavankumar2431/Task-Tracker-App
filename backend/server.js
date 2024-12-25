@@ -8,7 +8,6 @@ const jwt = require("jsonwebtoken");
 // Load environment variables
 dotenv.config();
 
-
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -44,6 +43,7 @@ const taskSchema = new mongoose.Schema({
     enum: ["Low", "Medium", "High"],
     default: "Low",
   },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Reference to the User
 });
 
 // User Schema
@@ -69,6 +69,22 @@ function isValidEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
+
+// Middleware to authenticate user by JWT
+const authenticateToken = (req, res, next) => {
+  const token = req.header("Authorization")?.split(" ")[1]; // Bearer token
+  if (!token) {
+    return res.status(403).json({ message: "Access denied, no token provided" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // Add the user ID from token to the request
+    next(); // Proceed to the next middleware or route handler
+  } catch (err) {
+    res.status(401).json({ message: "Invalid or expired token" });
+  }
+};
 
 // Routes
 
@@ -116,22 +132,29 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// GET /tasks - Fetch all tasks
-app.get("/tasks", async (req, res) => {
+// GET /tasks - Fetch all tasks for the authenticated user
+app.get("/tasks", authenticateToken, async (req, res) => {
   try {
-    const tasks = await Task.find();
+    const tasks = await Task.find({ user: req.user.id }); // Fetch tasks only for the authenticated user
     res.status(200).json(tasks);
   } catch (err) {
     res.status(500).json({ message: "Error fetching tasks", error: err.message });
   }
 });
 
-// POST /tasks - Add a new task
-app.post("/tasks", async (req, res) => {
+// POST /tasks - Add a new task for the authenticated user
+app.post("/tasks", authenticateToken, async (req, res) => {
   const { name, description, dueDate, status, priority } = req.body;
 
   try {
-    const newTask = new Task({ name, description, dueDate, status, priority });
+    const newTask = new Task({
+      name,
+      description,
+      dueDate,
+      status,
+      priority,
+      user: req.user.id, // Associate the task with the authenticated user
+    });
     await newTask.save();
     res.status(201).json(newTask);
   } catch (err) {
@@ -140,15 +163,16 @@ app.post("/tasks", async (req, res) => {
 });
 
 // PATCH /tasks/:id - Update a task
-app.patch("/tasks/:id", async (req, res) => {
+app.patch("/tasks/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
 
   try {
-    const updatedTask = await Task.findByIdAndUpdate(id, updates, {
-      new: true,
-      runValidators: true,
-    });
+    const updatedTask = await Task.findOneAndUpdate(
+      { _id: id, user: req.user.id }, // Ensure only the user's own task can be updated
+      updates,
+      { new: true, runValidators: true }
+    );
     if (!updatedTask) {
       return res.status(404).json({ message: "Task not found" });
     }
@@ -159,11 +183,11 @@ app.patch("/tasks/:id", async (req, res) => {
 });
 
 // DELETE /tasks/:id - Delete a task
-app.delete("/tasks/:id", async (req, res) => {
+app.delete("/tasks/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
 
   try {
-    const deletedTask = await Task.findByIdAndDelete(id);
+    const deletedTask = await Task.findOneAndDelete({ _id: id, user: req.user.id }); // Ensure only the user's own task can be deleted
     if (!deletedTask) {
       return res.status(404).json({ message: "Task not found" });
     }

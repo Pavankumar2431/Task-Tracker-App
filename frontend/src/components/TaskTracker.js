@@ -23,8 +23,21 @@ const TaskTracker = ({onLogout}) => {
   }, []);
 
   const fetchTasks = async () => {
+    const token = localStorage.getItem("authToken");  // Get token from localStorage
+  
+    if (!token) {
+      console.error("No token found, please log in again.");
+      // Optionally, redirect to login if no token is found
+      window.location.href = "/login";
+      return;
+    }
+  
     try {
-      const response = await axios.get(`${apiUrl}/tasks`);
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
+  
+      const response = await axios.get(`${apiUrl}/tasks`, { headers });
       setTasks(response.data);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -40,35 +53,66 @@ const TaskTracker = ({onLogout}) => {
   };
 
   const handleSave = async () => {
+    const token = localStorage.getItem("authToken");  // Get token from localStorage
+    
+    if (!token) {
+      console.error("No token found, please log in again.");
+      // Optionally, redirect to login if no token is found
+      window.location.href = "/login";
+      return;
+    }
+  
     try {
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json", // Add content type for POST/PUT requests
+      };
+  
       if (modalData.id) {
-        await axios.patch(`${apiUrl}/tasks/${modalData.id}`, modalData);
+        // Update existing task
+        await axios.patch(`${apiUrl}/tasks/${modalData.id}`, modalData, { headers });
         setTasks((prevTasks) =>
           prevTasks.map((task) =>
             task._id === modalData.id ? { ...task, ...modalData } : task
           )
         );
       } else {
-        const response = await axios.post(`${apiUrl}/tasks`, modalData);
+        // Create new task
+        const response = await axios.post(`${apiUrl}/tasks`, modalData, { headers });
         setTasks((prevTasks) => [...prevTasks, response.data]);
       }
+  
       resetModalData();
       setShowModal(false);
     } catch (error) {
-      console.error('Error saving task:', error);
+      console.error("Error saving task:", error);
     }
   };
 
   const handleDelete = async (id) => {
+    const token = localStorage.getItem("authToken");  // Get token from localStorage
+  
+    if (!token) {
+      console.error("No token found, please log in again.");
+      // Optionally, redirect to login if no token is found
+      window.location.href = "/login";
+      return;
+    }
+  
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
-        await axios.delete(`${apiUrl}/tasks/${id}`);
+        const headers = {
+          Authorization: `Bearer ${token}`,
+        };
+  
+        await axios.delete(`${apiUrl}/tasks/${id}`, { headers });
         setTasks((prevTasks) => prevTasks.filter((task) => task._id !== id));
       } catch (error) {
         console.error('Error deleting task:', error);
       }
     }
   };
+  
 
   const openModal = (task = null) => {
     setModalData(

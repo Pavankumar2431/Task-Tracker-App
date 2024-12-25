@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Route, Navigate, Routes } from 'react-router-dom';
 import Login from './components/Login'; // Login Component
 import TaskTracker from './components/TaskTracker'; // TaskTracker Component
+import Signup from './components/Signup';
 
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -42,6 +43,16 @@ const App = () => {
             <Navigate to="/tasks" replace />
           ) : (
             <Login onLogin={handleLogin} />
+          )
+        }
+      />
+       <Route
+        path="/signup"
+        element={
+          isLoggedIn ? (
+            <Navigate to="/tasks" replace />
+          ) : (
+            <Signup onLogin={handleLogin} />
           )
         }
       />

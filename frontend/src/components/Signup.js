@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const Signup = () => {
-  const [formData, setFormData] = useState({ email: '', password: '', name: '' });
+  const [formData, setFormData] = useState({ email: '', password: '', username: '' });
   const [message, setMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -14,15 +15,27 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage(''); // Reset message before new request
+    setMessage('');
+    setErrorMessage('');
+
+    // Basic validation
+    if (!formData.username || !formData.email || !formData.password) {
+      setErrorMessage('All fields are required.');
+      return;
+    }
 
     try {
-        const apiUrl = process.env.REACT_APP_API_URL;
-      await axios.post(`${apiUrl}/signup`, formData);
-      setMessage('Signup successful! Redirecting to login...');
-      setTimeout(() => navigate('/login'), 2000); // Redirect after 2 seconds
+      const apiUrl = process.env.REACT_APP_API_URL;
+      const response = await axios.post(`${apiUrl}/signup`, formData);
+      if (response.status === 201) {
+        setMessage('Signup successful! Redirecting to login...');
+        setTimeout(() => navigate('/login'), 2000); // Redirect after 2 seconds
+      }
     } catch (error) {
-      setMessage('Signup failed. Please try again.');
+      setErrorMessage('Signup failed. Please try again.');
+      if (error.response && error.response.data && error.response.data.message) {
+        setErrorMessage(error.response.data.message); // Display backend error message if available
+      }
     }
   };
 
@@ -34,9 +47,9 @@ const Signup = () => {
           <label>Name</label>
           <input
             type="text"
-            name="name"
+            name="username"
             className="form-control"
-            value={formData.name}
+            value={formData.username}
             onChange={handleChange}
           />
         </div>
@@ -60,7 +73,10 @@ const Signup = () => {
             onChange={handleChange}
           />
         </div>
+
         {message && <p className="text-success">{message}</p>}
+        {errorMessage && <p className="text-danger">{errorMessage}</p>}
+        
         <button type="submit" className="btn btn-primary">Signup</button>
       </form>
     </div>
