@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 
 // Load environment variables
 dotenv.config();
-console.log("MONGO_URI:", process.env.MONGO_URI);
+
 
 // Initialize Express app
 const app = express();
