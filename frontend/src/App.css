@@ -1,0 +1,14 @@
+@media (max-width: 768px) {
+  .search-bar {
+    width: 100%;
+  }
+  .table {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 769px) {
+  .search-bar {
+    width: 300px;
+  }
+}
